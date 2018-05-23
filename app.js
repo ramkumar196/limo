@@ -84,7 +84,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 //   });
 // });
 
-db.connect('mongodb://localhost:27017','Local-Grandlimo-demo',function(err) {
+db.connect('mongodb://10.128.0.5:27020','Gradnlimotest',function(err) {
   if (err) {
     console.log('Unable to connect to Mongo.')
     process.exit(1)
