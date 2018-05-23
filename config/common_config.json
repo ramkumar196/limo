@@ -1,0 +1,7 @@
+{
+	"PUBLIC_UPLOADS_FOLDER":"public/uploads",
+	"MODEL_IMGPATH":"public/uploads/model_image",
+	"NO_IMAGE":"public/images/no_image109.png",
+	"TIMEZONE":"Asia/Kuwait",
+	"Q8TAXI_ENABLE":"0"
+}

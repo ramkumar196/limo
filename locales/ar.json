@@ -1,0 +1,11 @@
+{
+	"assign": "تعيين",
+	"reassign": "إعادة تعيين",
+	"not_completed":"رحلات غير مكتملة",
+	"completed":"Trip Completed",
+	"inprogress":"في تَقَدم",
+	"start_to_pickup":"Start To Pickup",
+	"cancel_by_passenger":"Cancelled by passenger",
+	"rejected_by_driver":"Rejected by driver",
+	"cancelled_by_driver":"Cancelled by driver"
+}
