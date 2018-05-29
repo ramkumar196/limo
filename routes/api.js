@@ -12,6 +12,13 @@ var homelib = require('../lib/home');
 var extraslib = require('../lib/extras');
 var logoutlib = require('../lib/logout');
 var tripdetaillib = require('../lib/tripdetail');
+var upcominglib = require('../lib/upcoming');
+var tripstartlib = require('../lib/tripstart');
+var completetriplib = require('../lib/tripcomplete');
+var fareupdatelib = require('../lib/fareupdate');
+
+var i18n = require('i18n');
+
 
 var q= require('q');
 
@@ -163,10 +170,46 @@ module.exports = function (app) {
 				res.send(results);
 			 });
 		}
-
+		else if(type == 'driver_reply')
+		{
+			upcominglib[type](q,req).then(function(results){
+				var time = new Date();
+				var endtime =time.getTime();
+				var execution_time = endtime-starttime;
+				results.execution_time = execution_time+" ms";
+				res.send(results);
+			 });
+		}else if(type == 'driver_arrived' || type == 'start_trip')
+		{
+			tripstartlib[type](q,req).then(function(results){
+				var time = new Date();
+				var endtime =time.getTime();
+				var execution_time = endtime-starttime;
+				results.execution_time = execution_time+" ms";
+				res.send(results);
+			 });
+		}else if(type == 'complete_trip')
+		{
+			completetriplib[type](q,req).then(function(results){
+				var time = new Date();
+				var endtime =time.getTime();
+				var execution_time = endtime-starttime;
+				results.execution_time = execution_time+" ms";
+				res.send(results);
+			 });
+		}else if(type == 'tripfare_update')
+		{
+			fareupdatelib[type](q,req).then(function(results){
+				var time = new Date();
+				var endtime =time.getTime();
+				var execution_time = endtime-starttime;
+				results.execution_time = execution_time+" ms";
+				res.send(results);
+			 });
+		}
 		else
 		{
-			var message = {'message':'invalid_company','status':8};
+			var message = {'message':i18n.__('invalid_request'),'status':-1};
 			res.type('text/json');
 			res.send(message);
 		}

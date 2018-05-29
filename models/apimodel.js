@@ -270,10 +270,14 @@ exports.driver_login= function(q,data){
 	let match_array = {
 	"phone":data.phone, 
 	"password":md5(data.password), 
-	"driver_code":data.driver_code, 
 	"user_type":'D', 
 	//"company_id":data.company_id
 	};
+
+	if(global.settings.q8taxi_enable == 0)
+	{
+		match_array.driver_code = data.driver_code 
+	}
 
 	let project = {
 		"status":1,
@@ -322,9 +326,9 @@ exports.driver_profile= function(q,userid){
 							"path": "$taxi_driver_mapping",
            					"preserveNullAndEmptyArrays": true
            				}},
-           				{'$match':{
-							"taxi_driver_mapping.mapping_status":"A"   
-						}},
+      					//{'$match':{
+						// 	"taxi_driver_mapping.mapping_status":"A"   
+						// }},
 						{'$lookup':{
 							'from':t.MDB_TAXI,
 							'localField':"taxi_driver_mapping.mapping_taxiid",
@@ -782,12 +786,14 @@ exports.update_driver_shift= function(q,updateArray,userid){
 	var deferred = q.defer();
 
 	let match_array = {
-		'_id':userid,
+		'_id':parseInt(userid),
 	};
+
+	console.log(match_array);
 	var collection = db.get().collection(t.MDB_DRIVER_INFO);
 	collection.update(match_array,{'$set':updateArray},function(err, results) {
 		console.log('err',err);
-	 	deferred.resolve('Updated Successfully');
+	 	deferred.resolve(results);
 		deferred.makeNodeResolver()
 		result=null;
 	  });
@@ -1324,9 +1330,10 @@ exports.get_trip_detail= function(q,trip_id){
                     'as' : "taxi"
                 }
             },
-            {
-				'$unwind' : '$taxi'
-			},
+            {'$unwind':{ 
+					"path": "$taxi",
+					"preserveNullAndEmptyArrays": true
+           	}},
 			{
                 '$lookup' : {
                     'from' : t.MDB_DRIVER_INFO,
@@ -1335,9 +1342,10 @@ exports.get_trip_detail= function(q,trip_id){
                     'as' : "driverinfo"
                 }
             },
-            {
-				'$unwind' : '$driverinfo'
-			},
+            {'$unwind':{ 
+					"path": "$driverinfo",
+					"preserveNullAndEmptyArrays": true
+           	}},
 			{
                 '$lookup' : {
                     'from' : t.MDB_MOTOR_MODEL,
@@ -1346,20 +1354,10 @@ exports.get_trip_detail= function(q,trip_id){
                     'as' : "model"
                 }
             },
-            {
-				'$unwind' : '$model'
-			},
-			{
-                '$lookup' : {
-                    'from' : t.MDB_DRIVER_INFO,
-                    'localField' : 'driver_id',
-                    'foreignField' : "_id",
-                    'as' : "driverinfo"
-                }
-            },
-            {
-				'$unwind' : '$driverinfo'
-			},
+            {'$unwind':{ 
+					"path": "$model",
+					"preserveNullAndEmptyArrays": true
+           	}},	
 			{
                 '$lookup' : {
                     'from' : t.MDB_PEOPLE,
@@ -1368,9 +1366,10 @@ exports.get_trip_detail= function(q,trip_id){
                     'as' : "people"
                 }
             },
-            {
-				'$unwind' : '$people'
-			},
+            {'$unwind':{ 
+					"path": "$people",
+					"preserveNullAndEmptyArrays": true
+           	}},
 			{
                 '$project' : {
 					'amt':{'$cond':[
@@ -1382,10 +1381,10 @@ exports.get_trip_detail= function(q,trip_id){
 					'pickup_time' : {'$dateToString': { 'format': "%d-%m-%Y %H:%M:%S", 'date': "$pickup_time" }},
 					'actual_pickup_time' : {'$dateToString': { 'format': "%d-%m-%Y %H:%M:%S", 'date': "$actual_pickup_time" }},
 					'drop_time' : {'$dateToString': { 'format': "%d-%M-%Y %H:%m:%S", 'date': "$drop_time" }},
-					'notes' : '$notes_driver',
-					'distance' : '$distance',
+					'notes' : {'$ifNull':['$notes_driver','']},
+					'distance' : {'$ifNull':['$distance',0]},
 					'waiting_hour' : '$waitingtime',
-					'trip_duration' : {'$divide':[{'$subtract':['$drop_time','$actual_pickup_time']},60000]},
+					//'trip_duration' : {'$divide':[{'$subtract':['$drop_time','$actual_pickup_time']},60000]},
                     'wallet_amount' : '$used_wallet_amount',
                     'waiting_cost' : {'$ifNull':['$trans.waiting_cost',0]},
                     'fare' : {'$ifNull':['$trans.fare',0]},
@@ -1400,7 +1399,20 @@ exports.get_trip_detail= function(q,trip_id){
                              {'$sum':['$trans.actual_paid_amt','$trans.wallet_amount_used']}
                              ]
                         },
+                     'trip_duration':{'$cond':[
+                            {'$eq':['$trans.drop_time',true]},
+                            {'$divide':[{'$subtract':['$drop_time','$actual_pickup_time']},60000]},
+                            0
+                             ]
+                        },
+                    'coordinates':'$driverinfo.loc.coordinates',
+                    'bearing':'$driverinfo.bearing',
+                    'accuracy':'$driverinfo.accuracy',
+                    'driver_status':'$driverinfo.status',
 					'amt' : { '$sum': '$trans.amt'},
+					'trans_id' :{'$ifNull':['$trans._id','']},
+					'airport_pickup' :{'$ifNull':['$airport_pickup','']},
+					'airport_type' :{'$ifNull':['$airport_type',0]},
 					//'actual_distance': {'$sum':'$trans.distance'),
 					//'metric' : {'$sum':'$trans.distance_unit'),
 					//'job_ref' : {'$sum':'$trans.job_ref'),
@@ -1414,10 +1426,11 @@ exports.get_trip_detail= function(q,trip_id){
 					'current_location' : '$current_location',
 					'no_passengers' : '$no_passengers',
 					'pickup_time' : '$pickup_time',
-					'actual_pickup_time' : '$actual_pickup_time',
-					'drop_time' : '$drop_time',
+					'actual_pickup_time' : {'$ifNull':['$actual_pickup_time','']},
+					'drop_time' :  {'$ifNull':['$drop_time','']},
+					'arrived_time' : {'$ifNull':['$arrived_time','']},
 					'rating' : '$rating',
-					'notes_driver' : '$notes_driver',
+					'notes_driver' : {'$ifNull':['$notes_driver','']},
 					'travel_status' : '$travel_status',
 					'driver_reply' : '$driver_reply',
 					'city_id' : '$search_city',
@@ -1431,7 +1444,7 @@ exports.get_trip_detail= function(q,trip_id){
 					'taxi_model_name' : '$model.model_name',
                     'model_image' : '$model.model_image',
 					'model_image_new' : '$model.model_image_new',
-					'time_to_reach_passen' : '$time_to_reach_passen',
+					'time_to_reach_passen' : {'$ifNull':['$time_to_reach_passen','0']},
 					'notification_status' : '$notification_status',
 					'used_wallet_amount' : '$used_wallet_amount',
 					'bookby' : '$bookby',
@@ -1439,15 +1452,18 @@ exports.get_trip_detail= function(q,trip_id){
 					'passenger_phone' : '$passengers.phone',
                     'passenger_image' : '$passengers.profile_image',
 					'lateral_end_date' : '$passengers.lateral_end_date',
+					'passenger_wallet_amount' : {'$ifNull':['$passengers.wallet_amount',0]},
 					'driver_name' : {'$ifNull':['$people.name','']},
 					'driver_image' : {'$ifNull':['$people.profile_picture','']},
 					'driver_id' : {'$ifNull':['$people._id','']},
 					'driver_phone' : {'$ifNull':['$people.phone','']},
+					'driver_login_status' : {'$ifNull':['$people.login_status','']},
 					'taxi_no' : '$taxi.taxi_no',
 					'taxi_speed' : '$taxi.taxi_speed',
 					'taxi_min_speed' : '$taxi.taxi_min_speed',
 					'taxi_id' : '$taxi._id',
 					'taxi_manufacturer' : '$taxi.taxi_manufacturer',
+					'taxi_colour' : '$taxi.taxi_colour',
 					'waiting_time' : '$waitingtime',
 					'distance' : '$distance',
 					'drop_location' : '$drop_location',
@@ -1465,7 +1481,308 @@ exports.get_trip_detail= function(q,trip_id){
                 }
             }
         ];
-	var collection = db.get().collection(t.MDB_LOGS_COMPLETED);
+	var collection = db.get().collection(t.MDB_PASSENGERSLOG);
+	collection.aggregate(arguments).toArray(function(err, results) {
+		console.log('err trip',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.update_driver_reply= function(q,updateArray,trip_id){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_PASSENGERSLOG);
+	collection.update({'_id':parseInt(trip_id)},{'$set':updateArray},{'$upsert':false},function(err,data){
+		console.log('err1',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;	
+			
+		});
+
+	 return deferred.promise;
+}
+
+exports.update_request_details= function(q,updateArray,trip_id){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_REQUEST_HISTORY);
+	collection.update({'trip_id':parseInt(trip_id)},{'$set':updateArray},{'$upsert':false},function(err,data){
+		console.log('err1',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;	
+			
+		});
+
+	 return deferred.promise;
+}
+
+exports.update_reject_trip_det= function(q,updateArray,trip_id){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_PASSENGERSLOG);
+	collection.update({'_id':parseInt(trip_id)},{'$set':updateArray},{'$upsert':false},function(err,data){
+		console.log('err1',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;	
+			
+		});
+
+	 return deferred.promise;
+}
+
+exports.trip_exists= function(q,trip_id,table_name){
+	var deferred = q.defer();
+
+	let match_array = {
+	"trip_id":parseInt(trip_id), 
+	};
+
+	var collection = db.get().collection(table_name);
+	collection.find(match_array).toArray(function(err, results) {
+		console.log('exists err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.fetch_all_logs= function(q,trip_id){
+	var deferred = q.defer();
+
+	let match_array = {
+	"_id":parseInt(trip_id), 
+	};
+
+	console.log(match_array);
+
+	var collection = db.get().collection(t.MDB_PASSENGERSLOG);
+	collection.find(match_array).toArray(function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+
+exports.insert_all_logs= function(q,insertArray,table_name){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(table_name);
+	collection.insert(insertArray,function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+
+exports.update_moved= function(q,trip_id){
+	var deferred = q.defer();
+
+	let updateArray = {
+		'moved':parseInt(2)
+	};
+
+	var collection = db.get().collection(t.MDB_PASSENGERSLOG);
+	collection.update({'_id':parseInt(trip_id)},{'$set':updateArray},{'$upsert':false},function(err,data){
+		console.log('err1',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;	
+			
+		});
+
+	 return deferred.promise;
+}
+
+
+exports.SiteSettings= function(q){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_SITEINFO);
+	collection.find({'_id':parseInt(1)}).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.sms_template= function(q,sms_id){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_SMS_TEMPLATES);
+
+lang = 'en';
+
+	 arguments = [
+		{
+			'$match':{
+					'_id':parseInt(sms_id)
+				},
+		},
+		{
+			'$project':{
+				'id':'$_id',
+				'sms_title':{'$cond': {
+				'if': { '$eq': [ lang, "en" ] },
+				'then': "$sms_title",
+				'else': "$arabic_sms_title"
+				}},
+				'sms_description':{'$cond': {
+				'if': { '$eq': [ lang, "en" ] },
+				'then': "$sms_description",
+				'else': "$arabic_sms_description"
+				}},
+			}
+		},
+	];
+
+	console.log(arguments);
+
+	collection.aggregate(arguments).toArray(function(err, results) {
+		console.log('sms err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+
+exports.update_trip= function(q,updateArray,trip_id){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_PASSENGERSLOG);
+
+	collection.update({_id:parseInt(trip_id)},{'$set':updateArray},{'$upsert':false},function(err,data){
+		console.log('err2',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;
+		});
+
+	 return deferred.promise;
+}
+
+exports.update_payentry= function(q,updateArray,trip_id){
+	var deferred = q.defer();
+
+
+	var update_array = {"fare_detail" : 
+						 [ {"key":"1","value" :updateArray.cash_pay }, 
+						 {"key":"6","value" : updateArray.card_pay},
+						 {"key":"3","value" : updateArray.knet_pay},
+						 {"key":"additional amount","value" : updateArray.add_amt},
+						 {"key":"wallet","value":updateArray.wallet_pay},
+						 {"key":"pending","value":updateArray.pending_pay},
+						 {"key":"fare_note","value":updateArray.fare_note}
+						]};
+
+	var collection = db.get().collection(t.MDB_PASSENGERSLOG);
+
+	collection.update({_id:parseInt(trip_id)},{'$set':update_array},{'$upsert':true},function(err,data){
+		console.log('err2',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;
+		});
+
+	 return deferred.promise;
+}
+
+exports.model_fare_details= function(q,model_id){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_MOTOR_MODEL);
+
+    arguments = [
+		{
+			'$match':{
+					'_id':parseInt(model_id)
+				},
+		},
+		{
+			'$project' : {
+				"base_fare": '$base_fare',
+				"min_fare": '$min_fare',
+				"minutes_fare": '$minutes_fare',
+				"cancellation_fare": '$cancellation_fare',						
+				"below_km": '$below_km',
+				"above_km": '$above_km',
+				"minutes_fare": '$minutes_fare',						
+				"night_charge": '$night_charge',
+				"night_timing_from" : '$night_timing_from',
+				"night_timing_to" : '$night_timing_to',						
+				"night_fare": '$night_fare',
+				"evening_charge" : '$evening_charge',
+				"evening_timing_from" : '$evening_timing_from',
+				"evening_timing_to" : '$evening_timing_to',						
+				"evening_fare": '$evening_fare',
+				"waiting_time" : '$waiting_time',
+				"min_km" : '$min_km',
+				"below_above_km" : '$below_above_km',
+				"time" : '$time',
+				"waiting_free" : '$waiting_free',
+				"airport_pickup_fare":'$airport_pickup_fare',
+				"airport_drop_fare":'$airport_drop_fare',
+			},
+		}
+
+	];
+
+	collection.aggregate(arguments).toArray(function(err, results) {
+		console.log('sms err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.check_new_request= function(q,driver_id,trip_id,driver_status,start_date){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_DRIVER_REQUEST_DETAILS);
+
+	if(driver_status == 'F')
+	{
+	var match_array = {'trip_id':parseInt(trip_id)};
+	}
+	else
+	{
+	var match_array = {'driver_id':parseInt(trip_id)};
+	}
+
+	var arguments = [
+				{
+                '$match' : match_array
+            	},
+				{
+					'$project' : {
+						"trip_id": '$trip_id',
+						"available_drivers": '$available_drivers',
+						"status": '$status'
+					},
+				},
+				{'$sort':{'_id':-1}},
+				{'$limit' : 1}
+			];
+
 	collection.aggregate(arguments).toArray(function(err, results) {
 		console.log('err',err);
 	 	deferred.resolve(results);
@@ -1475,3 +1792,233 @@ exports.get_trip_detail= function(q,trip_id){
 
 	 return deferred.promise;
 }
+
+
+
+exports.get_promocode_details= function(q,promocode){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_PASSENGERS_PROMO);
+	collection.find({'promocode':promocode},{"promocode":1,"package":1,"promo_used":1,"promo_limit":1,"total_used":1,"total_applied":1}).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.coupon_package_details= function(q,package){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_COUPON_PACKAGE);
+	collection.find({'_id':package},{"passenger_commission":1,"corporate_commission":1}).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.update_admin_balance= function(q,admin_amt){
+	var deferred = q.defer();
+
+	var updateArray ={
+		'account_balance':admin_amt
+	};
+
+	var collection = db.get().collection(t.MDB_PEOPLE);
+	collection.update({'user_type':'A'},{'$inc':updateArray},{'$upsert':false},function(err,data){
+		console.log('err1',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;	
+			
+		});
+
+	 return deferred.promise;
+}
+
+exports.update_company_balance= function(q,company_amt,company_id){
+	var deferred = q.defer();
+
+	var updateArray ={
+		'account_balance':company_amt
+	};
+
+	var collection = db.get().collection(t.MDB_PEOPLE);
+	collection.update({'user_type':'C','company_id':parseInt(company_id)},{'$inc':updateArray},{'$upsert':false},function(err,data){
+		console.log('err1',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;	
+			
+		});
+
+	 return deferred.promise;
+}
+
+exports.check_trans_exists= function(q,trip_id){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_TRANS);
+	collection.find({'passengers_log_id':parseInt(trip_id)}).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.gateway_details= function(q){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_PAYMENT_MODULES);
+	collection.find({'_id':{'$nin':[2,3,5,6]}},{'_id':1,'pay_mod_name':1,'pay_mod_default':1}).sort({'_id':1}).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.insert_transaction= function(q,insertArray){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_TRANS);
+	collection.insert(insertArray,function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.insert_wallet_logs= function(q,insertArray){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_PASSENGER_WALLET_LOG);
+	collection.insert(insertArray,function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.update_transaction= function(q,updateArray,trip_id){
+	var deferred = q.defer();
+
+	let match_array = {
+		'_id':parseInt(shift_id),
+	};
+	var collection = db.get().collection(t.MDB_TRANS);
+	collection.update(match_array,{'$set':updateArray},function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve('Updated Successfully');
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+
+exports.insert_trip_pay_details= function(q,insertArray){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_PAYDETAILS);
+	collection.insert(insertArray,function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.insert_temp_logs= function(q,insertArray){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_PASSENGERS_LOGS_TEMP);
+	collection.insert(insertArray,function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.update_passenger= function(q,updateArray,id){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_PASSENGERS);
+
+	collection.update({_id:parseInt(id)},{'$set':updateArray},{'$upsert':false},function(err,data){
+		console.log('err2',err);
+	 	deferred.resolve(data);
+		deferred.makeNodeResolver()
+		data=null;
+		});
+
+	 return deferred.promise;
+}
+
+exports.get_passenger_details= function(q,userid){
+	var deferred = q.defer();
+	var collection = db.get().collection(t.MDB_PASSENGERS);
+	collection.find({'_id':parseInt(userid)}).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+
+exports.update_promocode= function(q,promocode){
+	var deferred = q.defer();
+
+	let match_array = {
+		'promocode':promocode, 
+		'promo_type':parseInt(1)
+	};
+	var collection = db.get().collection(t.MDB_PASSENGER_PROMO);
+	collection.update(match_array,{'$inc':{'total_applied':1}},function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.knet_details= function(q){
+	var deferred = q.defer();
+
+	let match_array = {
+		'payment_gatway':'KNET',
+		'company_id':parseInt(1),
+		'payment_status': 'A'
+	};
+	
+	var collection = db.get().collection(t.MDB_PAYMENT_GATEWAYS);
+	collection.find(match_array,{"_id":1,"knet_alias":1,"payment_method":1,"knet_response_url":1,"knet_error_url":1}).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+
+	 return deferred.promise;
+}
+
+

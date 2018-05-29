@@ -84,14 +84,41 @@ app.use(express.static(path.join(__dirname, 'public')));
 //   });
 // });
 
-db.connect('mongodb://10.128.0.5:27020','Gradnlimotest',function(err) {
+db.connect('mongodb://localhost:27017','Local-Grandlimo-demo',function(err) {
   if (err) {
     console.log('Unable to connect to Mongo.')
     process.exit(1)
   } else {
+
+    var MongoStream = require('mongo-trigger');
+
+    var watcher = new MongoStream({format: 'pretty',host:'localhost',port:'27017',authdb:'Local-Grandlimo-demo'});
+
+    // watch the collection
+    watcher.watch('siteinfo', function(event) {
+    // parse the results
+    console.log('something changed:', event);
+    });
+
+    apimodel.SiteSettings(q).then(function(siteinforesults){
+
+      if(siteinforesults.length > 0)
+      {
+          global.settings = siteinforesults[0];
+      }
+      else
+      {
+          global.settings = {};
+      }
+
+    })
+
   	console.log(i18n.__('db_connect_success'));
   	}
 });
+
+
+
 
 app.io           = io;
 

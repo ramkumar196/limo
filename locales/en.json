@@ -31,5 +31,29 @@
 	"card_label":"Credit Card",
 	"knet_label":"Online-KNET",
 	"wallet_label":"Wallet",
-	"invalid_trip_id":"Invalid trip ID.We are not able to get trip details"
+	"invalid_trip_id":"Invalid trip ID.We are not able to get trip details",
+	"request_confirmed":"Booking has been Confirmed.",
+	"request_rejected":"You have rejected trip request. Your dispatcher will receive your status and reason.",
+	"trip_cancelled_driver":"Trip has been cancelled",
+	"trip_already_cancel_rejected":"Trip has been confirmed,rejected or cancelled. Check with list",
+	"trip_already_confirm":"Trip already confirmed",
+	"trip_already_rejected":"Trip already rejected",
+	"trip_cancel":"Trip already cancelled",
+	"trip_cancel_timeout":"Trip already cancelled due to timeout.",
+	"invalid_trip":"Invalid Trip",
+	"driver_arrival_send":"Your arrival has been sent to passenger",
+	"passenger_in_journey":"You are already in trip.",
+	"journey_started":"Your journey has started.",
+	"invalid_request":"Invalid Request",
+	"trip_fare_and_status_updated":"Trip fare already updated",
+	"trip_completed_driver":"Your trip has been completed. Please process payment.",
+	"location_updated":"Driver location updated successfully",
+	"api_request_confirmed_passenger":"Booking request sent. You will receive driver confirmation shortly.",
+	"dispatcher_trip_cancelled":"Dispatcher has been cancelled the Trip",
+	"passenger_trip_cancelled":"Trip has been cancelled by passenger",
+	"driver_logout_via_admin":"You have logged out from admin",
+	"fare_update_wallet":"Fare updated with wallet",
+	"trip_fare_updated":"Trip fare updated successfully"
+
+
 }

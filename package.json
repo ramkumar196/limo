@@ -4,7 +4,7 @@
   "description": "grandlimo is luxurious car boooking company",
   "main": "./bin/www",
   "scripts": {
-      "start": "node app.js"
+    "start": "node app.js"
   },
   "keywords": [
     "Luxurious",
@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "app-root-path": "^2.0.1",
+    "axios": "^0.18.0",
     "base-64": "^0.1.0",
     "body-parser": "^1.18.2",
     "cookie-parser": "^1.4.3",
@@ -24,10 +25,12 @@
     "i18n": "^0.8.3",
     "md5": "^2.2.1",
     "mime": "^2.3.1",
+    "mongo-trigger": "^0.1.5",
     "mongodb": "^3.0.7",
     "morgan": "^1.9.0",
     "path": "^0.12.7",
     "q": "^1.5.1",
+    "querystring": "^0.2.0",
     "serve-favicon": "^2.5.0",
     "socket.io": "^2.1.0",
     "time": "^0.12.0",
