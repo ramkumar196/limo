@@ -30,6 +30,16 @@ module.exports = function(io)
 					socketobj[data].emit('location_update_res',message);
 				});
 
+				socket.on('refresh_driver', function(data){
+
+					console.log('refresh_driver'+data)
+
+					message.message = i18n.__('refresh_driver');
+					message.status = 18;
+
+					socketobj[data].emit('refresh_driver',message);
+				});
+
 				socketobj[sessiondriver].on('location_update', function(data){
 
 				var validate_error  = validateLocationUpdate(q,data);
@@ -83,8 +93,7 @@ module.exports = function(io)
 								//console.log(message);
 								//socket.emit("location_update_res",message);
 							}
-
-							if(status == 20)
+							else if(status == 20)
 							{
 								var details = checkresults.details;
 								message.message = i18n.__('dispatcher_trip_cancelled');
@@ -93,8 +102,7 @@ module.exports = function(io)
 								//console.log(message);
 								//socket.emit("location_update_res",message);
 							}
-
-							if(status == 4)
+							else if(status == 4)
 							{
 								var details = checkresults.details;
 								message.message = i18n.__('passenger_trip_cancelled');
@@ -102,6 +110,12 @@ module.exports = function(io)
 								message.details = details;
 								//console.log(message);
 								//socket.emit("location_update_res",message);
+							}
+							else
+							{
+								message.message = i18n.__('location_updated');
+								message.status = 1;
+								message.details = [];
 							}
 
 						locationService.updateLocation(q,data).then(function(updateresults){

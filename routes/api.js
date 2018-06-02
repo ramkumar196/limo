@@ -110,7 +110,7 @@ module.exports = function (app) {
 		else
 		 */
 
-		if(type == 'driver_login' ||  type == 'taxiqr_scan' || type == 'update_taxi_info')
+		if(type == 'driver_login' ||  type == 'taxiqr_scan' || type == 'update_taxi_info' || type == 'forgot_password')
 		{
 			loginlib[type](q,req).then(function(results){
 				var time = new Date();
@@ -170,7 +170,7 @@ module.exports = function (app) {
 				res.send(results);
 			 });
 		}
-		else if(type == 'driver_reply')
+		else if(type == 'driver_reply' || type == 'reject_trip')
 		{
 			upcominglib[type](q,req).then(function(results){
 				var time = new Date();

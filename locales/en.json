@@ -53,7 +53,10 @@
 	"passenger_trip_cancelled":"Trip has been cancelled by passenger",
 	"driver_logout_via_admin":"You have logged out from admin",
 	"fare_update_wallet":"Fare updated with wallet",
-	"trip_fare_updated":"Trip fare updated successfully"
-
-
+	"trip_fare_updated":"Trip fare updated successfully",
+	"forgot_pass_success":"Kindly check your e-mail about Password Reset",
+	"trip_cancel_timeout":"Trip already cancelled due to timeout.",
+	"trip_already_canceled":"Trip already cancelled",
+	"driver_reply_timeout":"Sorry, you have not responded in time. Please try again.",
+	"request_rejected":"Request has been rejected"
 }

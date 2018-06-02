@@ -1761,12 +1761,14 @@ exports.check_new_request= function(q,driver_id,trip_id,driver_status,start_date
 
 	if(driver_status == 'F')
 	{
-	var match_array = {'trip_id':parseInt(trip_id)};
+	var match_array = {'selected_driver':parseInt(driver_id)};
 	}
 	else
 	{
-	var match_array = {'driver_id':parseInt(trip_id)};
+	var match_array = {'trip_id':parseInt(trip_id)};
 	}
+
+	console.log(match_array);
 
 	var arguments = [
 				{
@@ -2017,6 +2019,100 @@ exports.knet_details= function(q){
 		result=null;
 	  });
 
+
+	 return deferred.promise;
+}
+
+exports.check_valid_phone_code= function(q,data){
+	var deferred = q.defer();
+
+	let match_array = {
+	"phone":data.phone, 
+	"user_type":'D', 
+	};
+
+	if(global.settings.q8taxi_enable == 0)
+	{
+		match_array.driver_code=data.driver_code;
+	}
+	
+	var collection = db.get().collection(t.MDB_PEOPLE);
+	collection.find(match_array).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.get_driver_request= function(q,trip_id){
+	var deferred = q.defer();
+
+	let match_array = {
+	"trip_id":parseInt(trip_id), 
+	};
+
+	var collection = db.get().collection(t.MDB_DRIVER_REQUEST_DETAILS);
+	collection.find(match_array).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+exports.get_driver_taxi= function(q,driver_id){
+	var deferred = q.defer();
+
+	let match_array = {
+	"mapping_driverid":parseInt(driver_id), 
+	"mapping_status":'A', 
+	};
+
+	var collection = db.get().collection(t.MDB_TAXIMAPPING);
+	collection.find(match_array).toArray(function(err, results) {
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+
+exports.insert_rejection_history= function(q,insertArray){
+	var deferred = q.defer();
+
+	var collection = db.get().collection(t.MDB_REJECTION_HISTORY);
+	collection.insert(insertArray,function(err, results) {
+		console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
+
+	 return deferred.promise;
+}
+
+exports.current_driver_request= function(q,trip_id,driver_id){
+	var deferred = q.defer();
+
+	let match_array = {
+	"trip_id":parseInt(trip_id), 
+	'selected_driver':parseInt(driver_id),
+	'status':{'$ne':parseInt(4)},
+	};
+console.log(match_array);
+
+	var collection = db.get().collection(t.MDB_DRIVER_REQUEST_DETAILS);
+	collection.find(match_array,{'_id':1,'available_drivers':1,'total_drivers':1,
+'rejected_timeout_drivers':1,'status':1}).toArray(function(err, results) {
+	console.log('err',err);
+	 	deferred.resolve(results);
+		deferred.makeNodeResolver()
+		result=null;
+	  });
 
 	 return deferred.promise;
 }

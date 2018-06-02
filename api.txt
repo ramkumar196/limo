@@ -8,3 +8,8 @@ http://192.168.9.102:4000/api/index/Z3JhbmRsaW1vX2JPSGdESVczYUZUdTNEQ05LWGJVRzdM
 {"trip_fare":"4.00","eveningfare":"0","expmonth":"","corporate_discount":"0.00","eveningfare_applicable":"0","waiting_cost":"0.00","pay_mod_id":"1","fare":"4.00","minutes_traveled":"19","remarks":"","passenger_discount":"0.00","actual_amount":"4.0","trip_id":"105693","expyear":"","distance":"16.60","tax_amount":"0.00","actual_distance":"","minutes_fare":"4","nightfare":"0","tips":"0","waiting_time":"00:00","nightfare_applicable":"0","creditcard_no":"","creditcard_cvv":"","passenger_pending_amt":"0","paid_amt":"4.000","edit_status":0,"forceclose_status":0,"wallet_amount_used":'20'}
 
 {"message":"Trip fare updated successfully","status":-1,"driver_statistics":{"total_trip":0,"completed_trip":0,"total_earnings":0,"overall_rejected_trips":0,"cancelled_trips":0,"today_earnings":0,"shift_status":"IN","time_driven":0,"waiting_time":0,"status":1},"details":{"fare":"4.00","pickup":"Street 78, Rumaithiya, Kuwait, null, null","jobreferral":"76961","trip_id":"76961"},"execution_time":"126 ms"}
+
+
+http://192.168.9.102:4000/api/index/Z3JhbmRsaW1vX2JPSGdESVczYUZUdTNEQ05LWGJVRzdMYjlPdzJITlhEWW0=/?type=reject_trip
+
+{"trip_id":"68403","reject_type":"0","driver_id":"28","taxi_id":"7","company_id":"1","reason":"sfs"}

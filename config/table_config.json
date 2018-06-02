@@ -30,5 +30,6 @@
 "MDB_PASSENGER_WALLET_LOG":"passengers_wallet_log",
 "MDB_PASSENGER_PROMO":"passengers_promo",
 "MDB_PAYMENT_GATEWAYS":"payment_gateways",
-"MDB_PASSENGERS_LOGS_TEMP":"passengers_log_temp"
+"MDB_PASSENGERS_LOGS_TEMP":"passengers_log_temp",
+"MDB_REJECTION_HISTORY":"driver_rejection_list"
 }
